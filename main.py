@@ -10,10 +10,11 @@ def hello_http(request):
     request_args = request.args
     method = request.method
     headers = request.headers
+    if body and 'quoteId' in body and 'accountId' in body and 'sites' in body:
 
-    try:
-        if method == 'POST':
-            # sites_bulk_load(body,headers["Authorization"])
-            return ('', 200, None)
-    except:
-        return ('Fallamos', 500, None)
+        try:
+            if method == 'POST':
+                # sites_bulk_load(body,headers["Authorization"])
+                return ('', 200, None)
+        except:
+            return ('Internal Server Error', 500, None)

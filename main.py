@@ -14,7 +14,7 @@ def hello_http(request):
 
         try:
             if method == 'POST':
-                # sites_bulk_load(body,headers["Authorization"])
+                #sites_bulk_load(body,headers["Authorization"])
                 return ('', 200, None)
         except:
             return ('Internal Server Error', 500, None)

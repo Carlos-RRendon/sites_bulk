@@ -1,7 +1,7 @@
 
 def sites_parser(body):
 
-    if 'sites' in body:
+    if 'sites' in body and body['sites']:
 
 
         sites = body['sites']

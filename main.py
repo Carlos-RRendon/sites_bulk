@@ -1,15 +1,16 @@
 from flask import escape
 import functions_framework
 
-from controller.sites_completer import sites_parser
+from controller.sites_bulk_load import sites_bulk_load
 
 @functions_framework.http
 def hello_http(request):
     body = request.get_json(silent=True)
     request_args = request.args
+    method = request.method
 
-    sites_parser(body)
-
+    if method == 'POST':
+        sites_bulk_load(body)
 
     if body and 'name' in body:
         name = body['name']

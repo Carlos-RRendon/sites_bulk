@@ -7,7 +7,7 @@ __status__ = "Development"
 
 import requests
 
-def sites_bulk_load(body):
+def sites_bulk_load(body,token):
     quote_id = body['quoteId']
     account_id = body['accountId']
     sites = body['sites']
@@ -73,10 +73,11 @@ def sites_bulk_load(body):
             else:
                 continue
             sites_list.append(site_to_send)
+        else:
+            continue
 
-    if len(sites_list) > 1 :
-        send_salesforce_request(quote_id,sites_list)
-
+    if len(sites_list) > 1:
+        send_salesforce_request(quote_id,sites_list,token)
 
 def get_gmaps_info(location):
 
@@ -142,7 +143,7 @@ def get_feasibility(latitud, longitud):
     except:
         return None
 
-def send_salesforce_request(quote,sites):
+def send_salesforce_request(quote,sites,token):
 
     SALESFORCE_URL = 'https://totalplay--developsf.my.salesforce.com/services/apexrest/WS_CrearSitioMasivoEmpresarial'
 
@@ -153,7 +154,7 @@ def send_salesforce_request(quote,sites):
     }
     # Salesforce request configuration
     SALESFORCE_HEADERS = {
-        'Authorization': 'Bearer 00D8A0000005h6O!ASAAQGBy9973iJAECpKklkqxL7yoHfxSz81cnPoRDv_OrkpsUMA3yFqTdW2wfRTvl_ztnUDcy23TzEXK.fjduSqmm82IAbgI',
+        'Authorization': token,
         'Content-Type': 'application/json'
     }
     # Send the Salesforce request

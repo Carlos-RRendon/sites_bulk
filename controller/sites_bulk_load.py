@@ -5,9 +5,21 @@ __maintainer__ = "Miguel Angel Valente Vargas"
 __email__ = "miguel.valente@totalplay.com.mx"
 __status__ = "Development"
 
+import math
+
 import requests
+import json
+
 
 def sites_bulk_load(body,token):
+    from datetime import datetime
+
+    LOG_FILE = 'log.txt'
+    now = datetime.now()
+    dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
+    f = open(LOG_FILE, 'w')
+    f.write('Date: ' + dt_string + '\n')
+
     quote_id = body['quoteId']
     account_id = body['accountId']
     sites = body['sites']
@@ -67,17 +79,31 @@ def sites_bulk_load(body,token):
                     site_to_send['estado'] = element['short_name'] if element['short_name'] else site_to_send['estado']
 
             feasibility = get_feasibility(site_to_send['latitud'], site_to_send['longitud'])
+            print(f'Feasibility: {feasibility}')
 
             if feasibility is not None:
                 site_to_send.update(feasibility)
             else:
                 continue
+
             sites_list.append(site_to_send)
         else:
             continue
 
-    if len(sites_list) > 1:
-        send_salesforce_request(quote_id,sites_list,token)
+    salesforce_data = {
+        'idCotizacion': quote_id,
+        'datosSitio': sites_list,
+        'totalSites': len(sites_list)
+    }
+    print(f'Sites list for Salesforce: {sites_list}')
+    print(f'Sites list length : {len(sites_list)}')
+    f.write(f"Data sended to Salesforce:\nsites:{json.dumps(salesforce_data)}")
+
+    if len(sites_list) > 0:
+        salesforce_response = send_salesforce_request(quote_id,sites_list,token)
+        print(salesforce_response)
+
+    f.close()
 
 def get_gmaps_info(location):
 
@@ -160,3 +186,5 @@ def send_salesforce_request(quote,sites,token):
     # Send the Salesforce request
     response = requests.post(
         url=SALESFORCE_URL, headers=SALESFORCE_HEADERS, json=data)
+    return response.json()
+

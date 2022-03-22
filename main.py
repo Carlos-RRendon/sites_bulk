@@ -5,7 +5,7 @@ from controller.sites_bulk_load import sites_bulk_load
 
 
 @functions_framework.http
-def hello_http(request):
+def sitesBulkLoad(request):
     body = request.get_json(silent=True)
     request_args = request.args
     method = request.method
@@ -14,7 +14,7 @@ def hello_http(request):
 
         try:
             if method == 'POST':
-                #sites_bulk_load(body,headers["Authorization"])
+                sites_bulk_load(body,headers["Authorization"])
                 return ('', 200, None)
         except:
             return ('Internal Server Error', 500, None)

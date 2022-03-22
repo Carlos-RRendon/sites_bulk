@@ -188,3 +188,9 @@ def send_salesforce_request(quote,sites,token):
         url=SALESFORCE_URL, headers=SALESFORCE_HEADERS, json=data)
     return response.json()
 
+def batch_divider(batch_size, array):
+
+    number_of_batches =math.ceil(len(array)/batch_size)
+    batch_array = []
+
+

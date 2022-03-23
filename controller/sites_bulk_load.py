@@ -6,15 +6,17 @@ __email__ = "miguel.valente@totalplay.com.mx"
 __status__ = "Development"
 
 import math
-
+from time import sleep
 import requests
 import json
 
 
-def sites_bulk_load(body,token):
+def sites_bulk_load(body, token):
     from datetime import datetime
 
     LOG_FILE = 'log.txt'
+    BATCH_SIZE = 100
+
     now = datetime.now()
     dt_string = now.strftime("%Y/%m/%d %H:%M:%S")
     f = open(LOG_FILE, 'w')
@@ -90,23 +92,48 @@ def sites_bulk_load(body,token):
         else:
             continue
 
-    salesforce_data = {
-        'idCotizacion': quote_id,
-        'datosSitio': sites_list,
-        'totalSites': len(sites_list)
-    }
-    print(f'Sites list for Salesforce: {sites_list}')
-    print(f'Sites list length : {len(sites_list)}')
-    f.write(f"Data sended to Salesforce:\nsites:{json.dumps(salesforce_data)}")
+    verbose = True
 
     if len(sites_list) > 0:
-        salesforce_response = send_salesforce_request(quote_id,sites_list,token)
-        print(salesforce_response)
 
-    f.close()
+        batches_list = batch_sites(BATCH_SIZE, sites_list)
+        for num, batch in enumerate(batches_list):
+
+            salesforce_response = send_salesforce_request(quote_id, batch, token)
+            print(salesforce_response.json())
+
+            data_log = {
+                "batch_number": num,
+                "request":{
+                    "idCotizacion": quote_id,
+                    "datosSitio": batch,
+                    "totalSites": len(sites_list)
+                },
+                "response": {
+                    "message": salesforce_response.json(),
+                    "status": salesforce_response.status_code
+                }
+            }
+
+            if verbose:
+                print(f'Batch number {num}')
+                print(f'Sites list for Salesforce: {batch}')
+                print(f'Sites list length : {len(batch)}')
+                print(f'Response: {salesforce_response.json()}')
+
+
+            f.write(f"Batch number: {num}\n")
+            f.write(f"Batch lenght: {len(batch)}")
+            f.write(f"Salesforce Request:\n{json.dumps(data_log)}\n")
+
+            sleep(1)
+
+        f.write(f"Total of batches: {len(batches_list)}")
+        f.write(f"Total sites saved: {len(sites_list)}")
+        f.close()
+
 
 def get_gmaps_info(location):
-
     API_MAPS_URL = "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyDB8BwnMN8b0T9polJEdiMilCpX7ty7bkc"
     API_MAPS_PARAMS = {
         'address': location
@@ -122,8 +149,8 @@ def get_gmaps_info(location):
     else:
         return response['results'][0]
 
-def get_feasibility(latitud, longitud):
 
+def get_feasibility(latitud, longitud):
     GSALITE_URL = "http://10.216.47.28/soa-infra/resources/SalesForce/FactibilidadMDL!2.3/RestFactibilidadMDL/RestFactibilidadMDL"
     # GSAlite request configuration
     GSALITE_HEADERS = {
@@ -155,22 +182,22 @@ def get_feasibility(latitud, longitud):
         feasibility = response['CalculaFactibilidad']
 
         if feasibility['Detalle_Respuesta']['CodigoRespuesta'] == 'OK':
-          response_dict['cluster'] = feasibility['nombre_cluster']
-          response_dict['plaza'] = feasibility['Cuidad']
-          response_dict['region'] = feasibility['Region']
-          response_dict['regionId'] = feasibility['IdRegion']
-          response_dict['cobertura'] = 'Cobertura'
-          response_dict['zona'] = feasibility['zona']
-          response_dict['factibilidad'] = feasibility['factibilidad']
-          response_dict['distrito'] = feasibility['distrito']
-          return response_dict
+            response_dict['cluster'] = feasibility['nombre_cluster']
+            response_dict['plaza'] = feasibility['Cuidad']
+            response_dict['region'] = feasibility['Region']
+            response_dict['regionId'] = feasibility['IdRegion']
+            response_dict['cobertura'] = 'Cobertura'
+            response_dict['zona'] = feasibility['zona']
+            response_dict['factibilidad'] = feasibility['factibilidad']
+            response_dict['distrito'] = feasibility['distrito']
+            return response_dict
         else:
             return None
     except:
         return None
 
-def send_salesforce_request(quote,sites,token):
 
+def send_salesforce_request(quote, sites, token):
     SALESFORCE_URL = 'https://totalplay--developsf.my.salesforce.com/services/apexrest/WS_CrearSitioMasivoEmpresarial'
 
     data = {
@@ -186,11 +213,10 @@ def send_salesforce_request(quote,sites,token):
     # Send the Salesforce request
     response = requests.post(
         url=SALESFORCE_URL, headers=SALESFORCE_HEADERS, json=data)
-    return response.json()
-
-def batch_divider(batch_size, array):
-
-    number_of_batches =math.ceil(len(array)/batch_size)
-    batch_array = []
+    return response
 
 
+def batch_sites(batch_size, sites):
+    batch_slots = math.ceil(len(sites) / batch_size)
+    batch_sites = [sites[slot * batch_size: (slot + 1) * batch_size] for slot in range(batch_slots)]
+    return batch_sites

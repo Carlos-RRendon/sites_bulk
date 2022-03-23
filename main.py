@@ -16,5 +16,7 @@ def sitesBulkLoad(request):
             if method == 'POST':
                 sites_bulk_load(body,headers["Authorization"])
                 return ('', 200, None)
-        except:
+        except Exception as e:
+            print(e)
             return ('Internal Server Error', 500, None)
+
